@@ -18,7 +18,7 @@ module.exports = class extends Generator {
     const prompts = [
       {
         type: "input",
-        name: "name",
+        name: "projectName",
         message: "Your project name",
         default: this.appname // Default to current folder name
       }
@@ -31,45 +31,44 @@ module.exports = class extends Generator {
   }
 
   writing() {
-    this.log(`Creating sln for ${this.props.name}`);
-    execSync(`dotnet new sln -n ${this.props.name}`, {
-      cwd: this.destinationRoot()
-    });
+    const projectName = this.props.name;
+    const domainName = `${projectName}.Domain`;
+    const infrastructureName = `${projectName}.Infrastructure`;
+    const webApiName = `${projectName}.WebApi`;
 
-    this.log(`Creating domain class lib for ${this.props.name}`);
-    execSync(`dotnet new classlib -n ${this.props.name}.Domain`, {
-      cwd: this.destinationRoot()
-    });
+    this._dotnetCreateNew("sln", projectName);
 
-    this.log(`Associating domain class lib for ${this.props.name} with sln`);
-    execSync(`dotnet sln add ./${this.props.name}.Domain`, {
-      cwd: this.destinationRoot()
-    });
+    this._dotnetCreateNew("classlib", domainName);
+    this._dotnetSlnReference(domainName);
 
-    this.log(`Creating infrastructure class lib for ${this.props.name}`);
-    execSync(`dotnet new classlib -n ${this.props.name}.Infrastructure`, {
-      cwd: this.destinationRoot()
-    });
+    this._dotnetCreateNew("classlib", infrastructureName);
+    this._dotnetSlnReference(infrastructureName);
+    this._dotnetReference(infrastructureName, domainName);
 
-    this.log(
-      `Associating infrastructure class lib for ${this.props.name} with sln`
-    );
-    execSync(`dotnet sln add ./${this.props.name}.Infrastructure`, {
-      cwd: this.destinationRoot()
-    });
+    this._dotnetCreateNew("webapi", webApiName);
+    this._dotnetSlnReference(webApiName);
+    this._dotnetReference(webApiName, infrastructureName);
+    this._dotnetReference(webApiName, domainName);
+  }
 
-    this.log(`Creating web api for ${this.props.name}`);
-    execSync(`dotnet new webapi -n ${this.props.name}.WebApi`, {
-      cwd: this.destinationRoot()
-    });
-
-    this.log(`Associating web api for ${this.props.name} with sln`);
-    execSync(`dotnet sln add ./${this.props.name}.WebApi`, {
+  _dotnetCreateNew(type, projectName) {
+    this.log(`Creating ${type} ${projectName}`);
+    execSync(`dotnet new ${type} -n ${projectName}`, {
       cwd: this.destinationRoot()
     });
   }
 
-  install() {
-    //this.installDependencies();
+  _dotnetSlnReference(projectName) {
+    this.log(`Associating ${projectName} with sln`);
+    execSync(`dotnet sln add ./${projectName}`, {
+      cwd: this.destinationRoot()
+    });
+  }
+
+  _dotnetReference(projectName, projectTargetReference) {
+    this.log(`Associating ${projectName} with ${projectTargetReference}`);
+    execSync(`dotnet add ${projectName} reference ${projectTargetReference}`, {
+      cwd: this.destinationRoot()
+    });
   }
 };
