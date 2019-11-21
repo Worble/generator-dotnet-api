@@ -1,0 +1,9 @@
+{
+  "generator-node": {
+    "promptValues": {
+      "authorName": "Worble",
+      "authorEmail": "rsc93@pm.me",
+      "authorUrl": ""
+    }
+  }
+}
