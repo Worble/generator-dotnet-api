@@ -1,0 +1,8 @@
+dotnet core api template with:
+DDD ¬/
+Serilog ¬/
+EFCore (with resiliency)
+HealthChecks
+Swagger ¬/
+CQRS
+Httpclient with polly ¬/
