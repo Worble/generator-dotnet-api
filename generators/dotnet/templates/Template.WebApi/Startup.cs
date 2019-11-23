@@ -12,7 +12,9 @@ namespace <%= webApiName %>
 	using <%= domainName %>.Services;<% } %><% if(serilog) { %>
 	using Serilog;<% } %><% if(stronglyTypedConfig) { %>
 	using <%= domainName %>.Configuration;
-	using <%= webApiName %>.Extensions;<% } %>
+	using <%= webApiName %>.Extensions;<% } %><% if(healthchecksUi) { %>
+	using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+    using HealthChecks.UI.Client;<% } %>
 	
 	public class Startup
 	{
@@ -26,7 +28,8 @@ namespace <%= webApiName %>
 		// This method gets called by the runtime. Use this method to add services to the container.
 		public void ConfigureServices(IServiceCollection services)
 		{<% if(stronglyTypedConfig) { %>
-			services.BuildConfiguration<<%= stronglyTypedConfigName %>>(Configuration);<% } %><% if(polly) { %>
+			services.BuildConfiguration<<%= stronglyTypedConfigName %>>(Configuration);
+			<% } %><% if(polly) { %>
 			// See https://github.com/App-vNext/Polly/wiki/Polly-and-HttpClientFactory and https://docs.microsoft.com/en-us/aspnet/core/fundamentals/http-requests?view=aspnetcore-3.0#use-polly-based-handlers
 			services.AddHttpClient<IExampleHttpService, ExampleHttpService>()
 				.AddTransientHttpErrorPolicy(builder => builder.WaitAndRetryAsync(new[]
@@ -34,8 +37,13 @@ namespace <%= webApiName %>
 					TimeSpan.FromSeconds(1),
 					TimeSpan.FromSeconds(5),
 					TimeSpan.FromSeconds(10)
-				}));<% } %>
+				}));
+			<% } %><% if(healthchecks) { %>
+			// See https://github.com/Xabaril/AspNetCore.Diagnostics.HealthChecks
+            services.AddHealthChecks();
+			<% } %>
 			services.AddControllers();<% if(swagger) { %>
+			
 			// See https://github.com/domaindrivendev/Swashbuckle.AspNetCore
 			services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" }));<% } %>
 		}
@@ -59,7 +67,14 @@ namespace <%= webApiName %>
 			app.UseSwagger();
 			app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1"));<% } %>
 
-			app.UseEndpoints(endpoints => endpoints.MapControllers());
+			app.UseEndpoints(endpoints => {
+				endpoints.MapControllers();<% if(healthchecks) { %>
+				endpoints.MapHealthChecks("/healthz"<% if(healthchecksUi) { %>, new HealthCheckOptions
+					{
+						Predicate = _ => true,
+						ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+					}<% } %>);<% } %>
+			});
 		}
 	}
 }

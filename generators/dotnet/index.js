@@ -55,6 +55,19 @@ module.exports = class extends Generator {
         name: "polly",
         message: "Setup example HttpClient with Polly policies?",
         default: false
+      },
+      {
+        type: "confirm",
+        name: "healthchecks",
+        message: "Add healthchecks?",
+        default: false
+      },
+      {
+        type: "confirm",
+        name: "healthchecksUi",
+        message: "Add a seperate healthcheck UI project?",
+        default: false,
+        when: answers => answers.healthchecks
       }
     ];
 
@@ -90,6 +103,10 @@ module.exports = class extends Generator {
     // Polly constants
     const polly = this.props.polly;
 
+    // Healthcheck constants
+    const healthchecks = this.props.healthchecks;
+    const healthchecksUi = this.props.healthchecksUi;
+
     // Initial setup
     this._setupProject(projectName, domainName, infrastructureName, webApiName);
 
@@ -102,7 +119,6 @@ module.exports = class extends Generator {
       webApiName
     );
 
-    // Add strongly typed config specific files
     if (stronglyTypedConfig) {
       this._setupStrongTypeConfig(
         templateDomainName,
@@ -131,6 +147,10 @@ module.exports = class extends Generator {
       );
     }
 
+    if (healthchecksUi) {
+      this._setupHealthchecksUi(webApiName, projectName, serilog);
+    }
+
     // // Files
 
     // - WeatherForecast.cs
@@ -152,7 +172,9 @@ module.exports = class extends Generator {
         serilog,
         swagger,
         polly,
-        infrastructureName
+        infrastructureName,
+        healthchecks,
+        healthchecksUi
       }
     );
 
@@ -189,17 +211,19 @@ module.exports = class extends Generator {
   }
 
   _setupProject(projectName, domainName, infrastructureName, webApiName) {
+    const solutionName = `${projectName}.sln`;
+
     this._dotnetCreateNew("sln", projectName);
 
     this._dotnetCreateNew("classlib", domainName);
-    this._dotnetSlnReference(domainName);
+    this._dotnetSlnReference(domainName, solutionName);
 
     this._dotnetCreateNew("classlib", infrastructureName);
-    this._dotnetSlnReference(infrastructureName);
+    this._dotnetSlnReference(infrastructureName, solutionName);
     this._dotnetReference(infrastructureName, domainName);
 
     this._dotnetCreateNew("webapi", webApiName);
-    this._dotnetSlnReference(webApiName);
+    this._dotnetSlnReference(webApiName, solutionName);
     this._dotnetReference(webApiName, infrastructureName);
     this._dotnetReference(webApiName, domainName);
 
@@ -262,9 +286,9 @@ module.exports = class extends Generator {
     );
   }
 
-  _setupSerilog(webApiName) {
+  _setupSerilog(projName) {
     const serilogNugetPackage = "Serilog.AspNetCore";
-    this._addNugetPackage(webApiName, serilogNugetPackage);
+    this._addNugetPackage(projName, serilogNugetPackage);
   }
 
   _setupSwagger(webApiName) {
@@ -307,6 +331,52 @@ module.exports = class extends Generator {
     );
   }
 
+  _setupHealthchecksUi(webApiName, projectName, serilog) {
+    const healthCheckUiClientNugetPackage = "AspNetCore.HealthChecks.UI.Client";
+    const healthCheckSlnName = `${projectName}HealthCheckUI`;
+    const healthCheckSlnFullName = `${projectName}HealthCheckUI.sln`;
+
+    const templateHealthCheckProjName = "Template.HealthCheckUI";
+    const healthCheckProjName = `${projectName}.HealthCheckUI`;
+
+    const healthCheckUiNugetPackage = "AspNetCore.HealthChecks.UI";
+
+    this._addNugetPackage(webApiName, healthCheckUiClientNugetPackage);
+
+    this._dotnetCreateNew("sln", healthCheckSlnName);
+    this._dotnetCreateNew("web", healthCheckProjName);
+    this._dotnetSlnReference(healthCheckProjName, healthCheckSlnFullName);
+    this._addNugetPackage(healthCheckProjName, healthCheckUiNugetPackage);
+
+    if (serilog) {
+      this._setupSerilog(healthCheckProjName);
+    }
+
+    fs.unlinkSync(this.destinationPath(healthCheckProjName, "Startup.cs"));
+    fs.unlinkSync(this.destinationPath(healthCheckProjName, "Program.cs"));
+    fs.unlinkSync(
+      this.destinationPath(healthCheckProjName, "appsettings.json")
+    );
+
+    this.fs.copyTpl(
+      this.templatePath(templateHealthCheckProjName, "Program.cs"),
+      this.destinationPath(healthCheckProjName, "Program.cs"),
+      { healthCheckProjName, serilog }
+    );
+
+    this.fs.copyTpl(
+      this.templatePath(templateHealthCheckProjName, "Startup.cs"),
+      this.destinationPath(healthCheckProjName, "Startup.cs"),
+      { healthCheckProjName, serilog }
+    );
+
+    this.fs.copyTpl(
+      this.templatePath(templateHealthCheckProjName, "appsettings.json"),
+      this.destinationPath(healthCheckProjName, "appsettings.json"),
+      { healthCheckProjName, serilog }
+    );
+  }
+
   _dotnetCreateNew(type, projectName) {
     this.log(`Creating ${type} ${projectName}`);
     execSync(`dotnet new ${type} -n ${projectName}`, {
@@ -314,9 +384,9 @@ module.exports = class extends Generator {
     });
   }
 
-  _dotnetSlnReference(projectName) {
-    this.log(`Associating ${projectName} with sln`);
-    execSync(`dotnet sln add ./${projectName}`, {
+  _dotnetSlnReference(projectName, solutionName) {
+    this.log(`Associating ${projectName} with ${solutionName}`);
+    execSync(`dotnet sln ${solutionName} add ./${projectName}`, {
       cwd: this.destinationRoot()
     });
   }
