@@ -215,14 +215,14 @@ module.exports = class extends Generator {
 
     this._dotnetCreateNew("sln", projectName);
 
-    this._dotnetCreateNew("classlib", domainName);
+    this._dotnetCreateNew("classlib", domainName, "netstandard2.1");
     this._dotnetSlnReference(domainName, solutionName);
 
-    this._dotnetCreateNew("classlib", infrastructureName);
+    this._dotnetCreateNew("classlib", infrastructureName, "netstandard2.1");
     this._dotnetSlnReference(infrastructureName, solutionName);
     this._dotnetReference(infrastructureName, domainName);
 
-    this._dotnetCreateNew("webapi", webApiName);
+    this._dotnetCreateNew("webapi", webApiName, "netcoreapp3.0");
     this._dotnetSlnReference(webApiName, solutionName);
     this._dotnetReference(webApiName, infrastructureName);
     this._dotnetReference(webApiName, domainName);
@@ -344,7 +344,7 @@ module.exports = class extends Generator {
     this._addNugetPackage(webApiName, healthCheckUiClientNugetPackage);
 
     this._dotnetCreateNew("sln", healthCheckSlnName);
-    this._dotnetCreateNew("web", healthCheckProjName);
+    this._dotnetCreateNew("web", healthCheckProjName, "netcoreapp3.0");
     this._dotnetSlnReference(healthCheckProjName, healthCheckSlnFullName);
     this._addNugetPackage(healthCheckProjName, healthCheckUiNugetPackage);
 
@@ -377,11 +377,16 @@ module.exports = class extends Generator {
     );
   }
 
-  _dotnetCreateNew(type, projectName) {
+  _dotnetCreateNew(type, projectName, framework) {
     this.log(`Creating ${type} ${projectName}`);
-    execSync(`dotnet new ${type} -n ${projectName}`, {
-      cwd: this.destinationRoot()
-    });
+    execSync(
+      `dotnet new ${type} -n ${projectName}${
+        framework ? " -f " + framework : ""
+      }`,
+      {
+        cwd: this.destinationRoot()
+      }
+    );
   }
 
   _dotnetSlnReference(projectName, solutionName) {
