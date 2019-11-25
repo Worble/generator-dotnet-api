@@ -111,13 +111,7 @@ module.exports = class extends Generator {
     this._setupProject(projectName, domainName, infrastructureName, webApiName);
 
     // Delete files we don't need
-    this._cleanupProject(
-      templateDomainName,
-      templateWebApiName,
-      domainName,
-      infrastructureName,
-      webApiName
-    );
+    this._cleanupProject(domainName, infrastructureName, webApiName);
 
     if (stronglyTypedConfig) {
       this._setupStrongTypeConfig(
@@ -237,13 +231,7 @@ module.exports = class extends Generator {
     );
   }
 
-  _cleanupProject(
-    templateDomainName,
-    templateWebApiName,
-    domainName,
-    infrastructureName,
-    webApiName
-  ) {
+  _cleanupProject(domainName, infrastructureName, webApiName) {
     fs.unlinkSync(this.destinationPath(domainName, "Class1.cs"));
     fs.unlinkSync(this.destinationPath(infrastructureName, "Class1.cs"));
     fs.unlinkSync(this.destinationPath(webApiName, "WeatherForecast.cs"));
