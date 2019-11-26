@@ -12,7 +12,6 @@ var EfCoreConnectionEnum;
     EfCoreConnectionEnum["Sqlite"] = "SQLite";
 })(EfCoreConnectionEnum || (EfCoreConnectionEnum = {}));
 function getEfNugetPackageName(efCoreConnection) {
-    console.log(efCoreConnection);
     switch (efCoreConnection) {
         case EfCoreConnectionEnum.SqlServer:
             return "Microsoft.EntityFrameworkCore.SqlServer";
@@ -111,12 +110,12 @@ module.exports = class extends Generator {
         ];
         return this.prompt(prompts).then((props) => {
             // To access props later use this.props.someAnswer;
-            this.props = props;
+            this._props = props;
         });
     }
     writing() {
         // // Constants
-        const props = this.props;
+        const props = this._props;
         // Template name constants
         const templateProjectName = "Template";
         const templateDomainName = `${templateProjectName}.Domain`;
@@ -158,7 +157,6 @@ module.exports = class extends Generator {
         const efCoreConnection = props.efCoreConnection;
         const efCoreConnectionString = props.efCoreConnectionString;
         const efCoreOptionsUse = getEfStartupUseString(efCoreConnection);
-        this.log(efCoreConnection);
         // // Setups
         // Initial setup
         this._setupProject(namingConstants);
@@ -295,7 +293,6 @@ module.exports = class extends Generator {
         this.fs.copyTpl(this.templatePath(templateHealthCheckProjName, "appsettings.json"), this.destinationPath(healthCheckProjName, "appsettings.json"), { healthCheckProjName, serilog });
     }
     _setupEfCore(namingConstants, efCoreConnection) {
-        this.log(efCoreConnection);
         const efNugetPackage = getEfNugetPackageName(efCoreConnection);
         this._addNugetPackage(namingConstants.project.infrastructureName, efNugetPackage);
         const efDesignNugetPackage = "Microsoft.EntityFrameworkCore.Design";

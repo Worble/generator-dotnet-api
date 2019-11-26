@@ -149,13 +149,15 @@ module.exports = class extends Generator {
 
     return this.prompt(prompts).then((props: IGeneratorPrompts) => {
       // To access props later use this.props.someAnswer;
-      this.props = props;
+      this._props = props;
     });
   }
 
+  _props: IGeneratorPrompts;
+
   writing() {
     // // Constants
-    const props: IGeneratorPrompts = this.props;
+    const props: IGeneratorPrompts = this._props;
 
     // Template name constants
     const templateProjectName: string = "Template";
