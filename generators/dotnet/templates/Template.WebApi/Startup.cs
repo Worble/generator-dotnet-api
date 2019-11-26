@@ -14,7 +14,10 @@ namespace <%= webApiName %>
 	using <%= domainName %>.Configuration;
 	using <%= webApiName %>.Extensions;<% } %><% if(healthchecksUi) { %>
 	using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-    using HealthChecks.UI.Client;<% } %>
+    using HealthChecks.UI.Client;<% } %><% if(efCore) { %>
+	using System.Reflection;
+	using Microsoft.EntityFrameworkCore;
+	using <%= infrastructureName %>.EntityFramework;<% } %>
 	
 	public class Startup
 	{
@@ -29,6 +32,14 @@ namespace <%= webApiName %>
 		public void ConfigureServices(IServiceCollection services)
 		{<% if(stronglyTypedConfig) { %>
 			services.BuildConfiguration<<%= stronglyTypedConfigName %>>(Configuration);
+			<% } %><% if(efCore) { %>
+			// See https://docs.microsoft.com/en-us/aspnet/core/data/ef-rp/intro?view=aspnetcore-3.0&tabs=visual-studio-code
+			services.AddDbContext<PostContext>(options =>
+				<%= efCoreOptionsUse %>
+					Configuration.GetConnectionString("PostContext"),
+					builder => builder.MigrationsAssembly(Assembly.GetExecutingAssembly().GetName().Name)
+				)
+			);
 			<% } %><% if(polly) { %>
 			// See https://github.com/App-vNext/Polly/wiki/Polly-and-HttpClientFactory and https://docs.microsoft.com/en-us/aspnet/core/fundamentals/http-requests?view=aspnetcore-3.0#use-polly-based-handlers
 			services.AddHttpClient<IExampleHttpService, ExampleHttpService>()
