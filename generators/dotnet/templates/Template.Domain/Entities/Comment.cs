@@ -4,26 +4,13 @@ namespace <%=domainName%>.Entities
 
 	public class Comment : BaseEntity
 	{
-		private Comment()
+		public Comment()
 		{
 		}
 
-		public Comment(string content, string author, int postId)
-		{
-			Content = content;
-			Author = author;
-			PostId = postId;
-		}
-
-		public string Content { get; private set; }
-		public string Author { get; private set; }
-		public int PostId { get; private set; }
-		public Post Post { get; private set; }
-
-		public Comment UpdateContent(string content)
-		{
-			Content = content;
-			return this;
-		}
+		public string Content { get; set; }
+		public string Author { get; set; }
+		public int PostId { get; set; }
+		public Post Post { get; set; }
 	}
 }

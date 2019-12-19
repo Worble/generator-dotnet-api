@@ -1,11 +1,11 @@
 /* eslint-disable max-params */
 "use strict";
 
-const Generator = require("yeoman-generator");
-const chalk = require("chalk");
-const yosay = require("yosay");
+import chalk from "chalk";
+import fs from "fs";
+import Generator from "yeoman-generator";
+import yosay from "yosay";
 const execSync = require("child_process").execSync;
-const fs = require("fs");
 
 enum EfCoreConnectionEnum {
   SqlServer = "SQL Server",
@@ -59,6 +59,7 @@ interface IGeneratorPrompts {
   efCore: boolean;
   efCoreConnection: EfCoreConnectionEnum;
   efCoreConnectionString: string;
+  cqrs: boolean;
 }
 
 module.exports = class extends Generator {
@@ -72,12 +73,12 @@ module.exports = class extends Generator {
       )
     );
 
-    const prompts = [
+    const prompts: Generator.Questions = [
       {
         type: "input",
         name: "projectName",
         message: "Your project name",
-        default: this.appname // Default to current folder name
+        default: this.appname
       },
       {
         type: "confirm",
@@ -144,6 +145,12 @@ module.exports = class extends Generator {
         message: "Enter your EF Core connection string",
         default: "",
         when: (answers: IGeneratorPrompts) => answers.efCore
+      },
+      {
+        type: "confirm",
+        name: "cqrs",
+        message: "Setup CQRS infrastructure with Mediatr?",
+        default: false
       }
     ];
 
@@ -209,6 +216,9 @@ module.exports = class extends Generator {
     const efCoreConnectionString: string = props.efCoreConnectionString;
     const efCoreOptionsUse: string = getEfStartupUseString(efCoreConnection);
 
+    // CQRS constants
+    const cqrs: boolean = props.cqrs;
+
     // // Setups
 
     // Initial setup
@@ -239,6 +249,9 @@ module.exports = class extends Generator {
 
     if (efCore) {
       this._setupEfCore(namingConstants, efCoreConnection);
+    }
+
+    if (cqrs) {
     }
 
     // // Files
