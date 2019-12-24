@@ -1,10 +1,10 @@
 /* eslint-disable max-params */
 "use strict";
 
-import chalk from "chalk";
-import fs from "fs";
-import Generator from "yeoman-generator";
-import yosay from "yosay";
+const chalk = require("chalk");
+const Generator = require("yeoman-generator");
+const yosay = require("yosay");
+const fs = require("fs");
 const execSync = require("child_process").execSync;
 
 enum EfCoreConnectionEnum {
@@ -24,6 +24,19 @@ function getEfNugetPackageName(efCoreConnection: EfCoreConnectionEnum) {
   }
 }
 
+function getEfHealthCheckNugetPackageName(
+  efCoreConnection: EfCoreConnectionEnum
+) {
+  switch (efCoreConnection) {
+    case EfCoreConnectionEnum.SqlServer:
+      return "AspNetCore.HealthChecks.SqlServer";
+    case EfCoreConnectionEnum.Postgres:
+      return "AspNetCore.HealthChecks.Npgsql";
+    case EfCoreConnectionEnum.Sqlite:
+      return "AspNetCore.HealthChecks.SqLite";
+  }
+}
+
 function getEfStartupUseString(efCoreConnection: EfCoreConnectionEnum) {
   switch (efCoreConnection) {
     case EfCoreConnectionEnum.SqlServer:
@@ -32,6 +45,17 @@ function getEfStartupUseString(efCoreConnection: EfCoreConnectionEnum) {
       return "options.UseNpgsql(";
     case EfCoreConnectionEnum.Sqlite:
       return "options.UseSqlite(";
+  }
+}
+
+function getEfHealthcheckString(efCoreConnection: EfCoreConnectionEnum) {
+  switch (efCoreConnection) {
+    case EfCoreConnectionEnum.SqlServer:
+      return `.AddSqlServer(Configuration.GetConnectionString("PostContext"))`;
+    case EfCoreConnectionEnum.Postgres:
+      return `.AddNpgSql(Configuration.GetConnectionString("PostContext"))`;
+    case EfCoreConnectionEnum.Sqlite:
+      return `.AddSqlite(Configuration.GetConnectionString("PostContext"))`;
   }
 }
 
@@ -73,7 +97,7 @@ module.exports = class extends Generator {
       )
     );
 
-    const prompts: Generator.Questions = [
+    const prompts = [
       {
         type: "input",
         name: "projectName",
@@ -149,7 +173,7 @@ module.exports = class extends Generator {
       {
         type: "confirm",
         name: "cqrs",
-        message: "Setup CQRS infrastructure with Mediatr?",
+        message: "Setup DDD and CQRS infrastructure with Mediatr?",
         default: false
       }
     ];
@@ -215,6 +239,7 @@ module.exports = class extends Generator {
     const efCoreConnection: EfCoreConnectionEnum = props.efCoreConnection;
     const efCoreConnectionString: string = props.efCoreConnectionString;
     const efCoreOptionsUse: string = getEfStartupUseString(efCoreConnection);
+    const efCoreHealthString: string = getEfHealthcheckString(efCoreConnection);
 
     // CQRS constants
     const cqrs: boolean = props.cqrs;
@@ -243,15 +268,21 @@ module.exports = class extends Generator {
       this._setupPolly(namingConstants);
     }
 
-    if (healthchecksUi) {
-      this._setupHealthchecksUi(namingConstants, serilog);
+    if (healthchecks) {
+      this._setupHealthChecks(namingConstants, efCore, efCoreConnection);
+      if (healthchecksUi) {
+        this._setupHealthchecksUi(namingConstants, serilog);
+      }
     }
+
+    this._setupEntityFiles(namingConstants, efCore, cqrs);
 
     if (efCore) {
       this._setupEfCore(namingConstants, efCoreConnection);
     }
 
     if (cqrs) {
+      this._setupCqrs(namingConstants);
     }
 
     // // Files
@@ -279,7 +310,9 @@ module.exports = class extends Generator {
         healthchecks,
         healthchecksUi,
         efCore,
-        efCoreOptionsUse
+        efCoreOptionsUse,
+        efCoreHealthString,
+        cqrs
       }
     );
 
@@ -335,7 +368,7 @@ module.exports = class extends Generator {
     this._dotnetSlnReference(infrastructureName, solutionName);
     this._dotnetReference(infrastructureName, domainName);
 
-    this._dotnetCreateNew("webapi", webApiName, "netcoreapp3.0");
+    this._dotnetCreateNew("webapi", webApiName, "netcoreapp3.1");
     this._dotnetSlnReference(webApiName, solutionName);
     this._dotnetReference(webApiName, infrastructureName);
     this._dotnetReference(webApiName, domainName);
@@ -445,6 +478,21 @@ module.exports = class extends Generator {
     );
   }
 
+  _setupHealthChecks(
+    namingConstants: INamingConstants,
+    efCore: boolean,
+    efCoreConnection: EfCoreConnectionEnum
+  ) {
+    const webApiName = namingConstants.project.webApiName;
+
+    if (efCore) {
+      const efCoreHealthCheckNugetPackage = getEfHealthCheckNugetPackageName(
+        efCoreConnection
+      );
+      this._addNugetPackage(webApiName, efCoreHealthCheckNugetPackage);
+    }
+  }
+
   _setupHealthchecksUi(namingConstants: INamingConstants, serilog: boolean) {
     const projectName = namingConstants.project.projectName;
     const webApiName = namingConstants.project.webApiName;
@@ -457,7 +505,6 @@ module.exports = class extends Generator {
     const healthCheckProjName = `${projectName}.HealthCheckUI`;
 
     const healthCheckUiNugetPackage = "AspNetCore.HealthChecks.UI";
-
     this._addNugetPackage(webApiName, healthCheckUiClientNugetPackage);
 
     this._dotnetCreateNew("sln", healthCheckSlnName);
@@ -494,6 +541,89 @@ module.exports = class extends Generator {
     );
   }
 
+  _setupEntityFiles(
+    namingConstants: INamingConstants,
+    efCore: boolean,
+    cqrs: boolean
+  ) {
+    const templateDomainName = namingConstants.template.domainName;
+    const domainName = namingConstants.project.domainName;
+
+    if (cqrs) {
+      this.fs.copyTpl(
+        this.templatePath(
+          templateDomainName,
+          "Entities",
+          "Abstract",
+          "BaseEntityCQRS.cs"
+        ),
+        this.destinationPath(
+          domainName,
+          "Entities",
+          "Abstract",
+          "BaseEntity.cs"
+        ),
+        { domainName }
+      );
+
+      this.fs.copyTpl(
+        this.templatePath(
+          templateDomainName,
+          "Entities",
+          "Interfaces",
+          "IEntity.cs"
+        ),
+        this.destinationPath(
+          domainName,
+          "Entities",
+          "Interfaces",
+          "IEntity.cs"
+        ),
+        { domainName }
+      );
+
+      this.fs.copyTpl(
+        this.templatePath(templateDomainName, "Entities", "PostCQRS.cs"),
+        this.destinationPath(domainName, "Entities", "Post.cs"),
+        { domainName }
+      );
+
+      this.fs.copyTpl(
+        this.templatePath(templateDomainName, "Entities", "CommentCQRS.cs"),
+        this.destinationPath(domainName, "Entities", "Comment.cs"),
+        { domainName }
+      );
+    } else if (efCore) {
+      this.fs.copyTpl(
+        this.templatePath(
+          templateDomainName,
+          "Entities",
+          "Abstract",
+          "BaseEntity.cs"
+        ),
+        this.destinationPath(
+          domainName,
+          "Entities",
+          "Abstract",
+          "BaseEntity.cs"
+        ),
+        { domainName }
+      );
+
+      this.fs.copyTpl(
+        this.templatePath(templateDomainName, "Entities", "Post.cs"),
+        this.destinationPath(domainName, "Entities", "Post.cs"),
+        { domainName }
+      );
+
+      this.fs.copyTpl(
+        this.templatePath(templateDomainName, "Entities", "Comment.cs"),
+        this.destinationPath(domainName, "Entities", "Comment.cs"),
+        { domainName }
+      );
+    }
+  }
+
   _setupEfCore(
     namingConstants: INamingConstants,
     efCoreConnection: EfCoreConnectionEnum
@@ -510,34 +640,10 @@ module.exports = class extends Generator {
       efDesignNugetPackage
     );
 
-    const templateDomainName = namingConstants.template.domainName;
     const domainName = namingConstants.project.domainName;
     const templateInfrastructureName =
       namingConstants.template.infrastructureName;
     const infrastructureName = namingConstants.project.infrastructureName;
-
-    this.fs.copyTpl(
-      this.templatePath(
-        templateDomainName,
-        "Entities",
-        "Abstract",
-        "BaseEntity.cs"
-      ),
-      this.destinationPath(domainName, "Entities", "Abstract", "BaseEntity.cs"),
-      { domainName }
-    );
-
-    this.fs.copyTpl(
-      this.templatePath(templateDomainName, "Entities", "Post.cs"),
-      this.destinationPath(domainName, "Entities", "Post.cs"),
-      { domainName }
-    );
-
-    this.fs.copyTpl(
-      this.templatePath(templateDomainName, "Entities", "Comment.cs"),
-      this.destinationPath(domainName, "Entities", "Comment.cs"),
-      { domainName }
-    );
 
     this.fs.copyTpl(
       this.templatePath(
@@ -556,9 +662,274 @@ module.exports = class extends Generator {
     this._dotnetCreateNew("tool-manifest");
 
     this.log(`Installing dotnet ef tools`);
-    execSync(`dotnet tool install dotnet-ef --version 3.0.0`, {
+    execSync(`dotnet tool install dotnet-ef`, {
       cwd: this.destinationRoot()
     });
+  }
+
+  _setupCqrs(namingConstants: INamingConstants) {
+    const domainName = namingConstants.project.domainName;
+    const infrastructureName = namingConstants.project.infrastructureName;
+    const webApiName = namingConstants.project.webApiName;
+
+    const mediatrNugetPackage = "MediatR";
+    this._addNugetPackage(domainName, mediatrNugetPackage);
+    this._addNugetPackage(infrastructureName, mediatrNugetPackage);
+    this._addNugetPackage(webApiName, mediatrNugetPackage);
+
+    const aspnetMediatrNugetPackage =
+      "MediatR.Extensions.Microsoft.DependencyInjection";
+    this._addNugetPackage(webApiName, aspnetMediatrNugetPackage);
+
+    const fluentValidationNugetPackage = "FluentValidation";
+    this._addNugetPackage(domainName, fluentValidationNugetPackage);
+    this._addNugetPackage(infrastructureName, fluentValidationNugetPackage);
+
+    const dependencyInjectionNugetPackage =
+      "Microsoft.Extensions.DependencyInjection.Abstractions";
+    this._addNugetPackage(domainName, dependencyInjectionNugetPackage);
+    this._addNugetPackage(infrastructureName, dependencyInjectionNugetPackage);
+
+    const webApiNewtonsoftNugetPackage =
+      "Microsoft.AspNetCore.Mvc.NewtonsoftJson";
+    this._addNugetPackage(webApiName, webApiNewtonsoftNugetPackage);
+
+    this._setupCqrsDomain(namingConstants);
+    this._setupCqrsInfrastructure(namingConstants);
+    this._setupCqrsWebApi(namingConstants);
+  }
+
+  _setupCqrsDomain(namingConstants: INamingConstants) {
+    const templateDomainName = namingConstants.template.domainName;
+    const domainName = namingConstants.project.domainName;
+    this._setupCqrsDomainBuilders(templateDomainName, domainName);
+    this._setupCqrsDomainCommands(templateDomainName, domainName);
+    this._setupCqrsDomainQueries(templateDomainName, domainName);
+    this.fs.copyTpl(
+      this.templatePath(
+        templateDomainName,
+        "Extensions",
+        "IServiceCollectionExtensions.cs"
+      ),
+      this.destinationPath(
+        domainName,
+        "Extensions",
+        "IServiceCollectionExtensions.cs"
+      ),
+      { domainName }
+    );
+  }
+
+  _setupCqrsDomainBuilders(templateDomainName: string, domainName: string) {
+    this.fs.copyTpl(
+      this.templatePath(
+        templateDomainName,
+        "Builders",
+        "Interfaces",
+        "IBuilder.cs"
+      ),
+      this.destinationPath(domainName, "Builders", "Interfaces", "IBuilder.cs"),
+      { domainName }
+    );
+    this.fs.copyTpl(
+      this.templatePath(
+        templateDomainName,
+        "Builders",
+        "Interfaces",
+        "IBuilderParameters.cs"
+      ),
+      this.destinationPath(
+        domainName,
+        "Builders",
+        "Interfaces",
+        "IBuilderParameters.cs"
+      ),
+      { domainName }
+    );
+    this.fs.copyTpl(
+      this.templatePath(templateDomainName, "Builders", "CommentBuilder.cs"),
+      this.destinationPath(domainName, "Builders", "CommentBuilder.cs"),
+      { domainName }
+    );
+    this.fs.copyTpl(
+      this.templatePath(templateDomainName, "Builders", "PostBuilder.cs"),
+      this.destinationPath(domainName, "Builders", "PostBuilder.cs"),
+      { domainName }
+    );
+  }
+
+  _setupCqrsDomainCommands(templateDomainName: string, domainName: string) {
+    this.fs.copyTpl(
+      this.templatePath(
+        templateDomainName,
+        "Commands",
+        "Interfaces",
+        "ICreateCommand.cs"
+      ),
+      this.destinationPath(
+        domainName,
+        "Commands",
+        "Interfaces",
+        "ICreateCommand.cs"
+      ),
+      { domainName }
+    );
+    this.fs.copyTpl(
+      this.templatePath(
+        templateDomainName,
+        "Commands",
+        "CreateCommentCommand.cs"
+      ),
+      this.destinationPath(domainName, "Commands", "CreateCommentCommand.cs"),
+      { domainName }
+    );
+    this.fs.copyTpl(
+      this.templatePath(templateDomainName, "Commands", "CreatePostCommand.cs"),
+      this.destinationPath(domainName, "Commands", "CreatePostCommand.cs"),
+      { domainName }
+    );
+    this.fs.copyTpl(
+      this.templatePath(templateDomainName, "Commands", "UpdatePostCommand.cs"),
+      this.destinationPath(domainName, "Commands", "UpdatePostCommand.cs"),
+      { domainName }
+    );
+  }
+
+  _setupCqrsDomainQueries(templateDomainName: string, domainName: string) {
+    this.fs.copyTpl(
+      this.templatePath(templateDomainName, "Queries", "GetAllPostsQuery.cs"),
+      this.destinationPath(domainName, "Queries", "GetAllPostsQuery.cs"),
+      { domainName }
+    );
+    this.fs.copyTpl(
+      this.templatePath(templateDomainName, "Queries", "GetPostQuery.cs"),
+      this.destinationPath(domainName, "Queries", "GetPostQuery.cs"),
+      { domainName }
+    );
+  }
+
+  _setupCqrsInfrastructure(namingConstants: INamingConstants) {
+    const templateInfrastructureName =
+      namingConstants.template.infrastructureName;
+    const infrastructureName = namingConstants.project.infrastructureName;
+    const domainName = namingConstants.project.domainName;
+    this._setupCqrsInfrastructureCommandHandlers(
+      templateInfrastructureName,
+      infrastructureName,
+      domainName
+    );
+    this._setupCqrsInfrastructureQueryHandlers(
+      templateInfrastructureName,
+      infrastructureName,
+      domainName
+    );
+    this.fs.copyTpl(
+      this.templatePath(
+        templateInfrastructureName,
+        "Extensions",
+        "IServiceCollectionExtensions.cs"
+      ),
+      this.destinationPath(
+        infrastructureName,
+        "Extensions",
+        "IServiceCollectionExtensions.cs"
+      ),
+      { infrastructureName, domainName }
+    );
+  }
+
+  _setupCqrsInfrastructureCommandHandlers(
+    templateInfrastructureName: string,
+    infrastructureName: string,
+    domainName: string
+  ) {
+    this.fs.copyTpl(
+      this.templatePath(
+        templateInfrastructureName,
+        "CommandHandlers",
+        "CreateCommandHandler.cs"
+      ),
+      this.destinationPath(
+        infrastructureName,
+        "CommandHandlers",
+        "CreateCommandHandler.cs"
+      ),
+      { infrastructureName, domainName }
+    );
+    this.fs.copyTpl(
+      this.templatePath(
+        templateInfrastructureName,
+        "CommandHandlers",
+        "CreateCommentCommandHandler.cs"
+      ),
+      this.destinationPath(
+        infrastructureName,
+        "CommandHandlers",
+        "CreateCommentCommandHandler.cs"
+      ),
+      { infrastructureName, domainName }
+    );
+    this.fs.copyTpl(
+      this.templatePath(
+        templateInfrastructureName,
+        "CommandHandlers",
+        "UpdatePostCommandHandler.cs"
+      ),
+      this.destinationPath(
+        infrastructureName,
+        "CommandHandlers",
+        "UpdatePostCommandHandler.cs"
+      ),
+      { infrastructureName, domainName }
+    );
+  }
+
+  _setupCqrsInfrastructureQueryHandlers(
+    templateInfrastructureName: string,
+    infrastructureName: string,
+    domainName: string
+  ) {
+    this.fs.copyTpl(
+      this.templatePath(
+        templateInfrastructureName,
+        "QueryHandlers",
+        "GetPostQueryHandler.cs"
+      ),
+      this.destinationPath(
+        infrastructureName,
+        "QueryHandlers",
+        "GetPostQueryHandler.cs"
+      ),
+      { infrastructureName, domainName }
+    );
+    this.fs.copyTpl(
+      this.templatePath(
+        templateInfrastructureName,
+        "QueryHandlers",
+        "GetAllPostsQueryHandler.cs"
+      ),
+      this.destinationPath(
+        infrastructureName,
+        "QueryHandlers",
+        "GetAllPostsQueryHandler.cs"
+      ),
+      { infrastructureName, domainName }
+    );
+  }
+
+  _setupCqrsWebApi(namingConstants: INamingConstants) {
+    const templateWebApiName = namingConstants.template.webApiName;
+    const webApiName = namingConstants.project.webApiName;
+    const domainName = namingConstants.project.domainName;
+    this.fs.copyTpl(
+      this.templatePath(
+        templateWebApiName,
+        "Controllers",
+        "PostsController.cs"
+      ),
+      this.destinationPath(webApiName, "Controllers", "PostsController.cs"),
+      { webApiName, domainName }
+    );
   }
 
   // Common

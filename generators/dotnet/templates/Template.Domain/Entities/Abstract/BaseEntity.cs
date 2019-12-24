@@ -4,8 +4,8 @@ namespace <%= domainName %>.Entities.Abstract
 
 	public abstract class BaseEntity
 	{
-		public int Id { get; private set; }
-		public DateTime DateCreated { get; private set; } = DateTime.Now;
-		public DateTime? DateEdited { get; private set; }
+		public int Id { get; set; }
+		public DateTime DateCreated { get; set; } = DateTime.Now;
+		public DateTime? DateEdited { get; set; }
 	}
 }

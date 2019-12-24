@@ -1,8 +1,13 @@
 dotnet core api template with:
 DDD ¬/
 Serilog ¬/
-EFCore (with resiliency)
-HealthChecks
+EFCore (with resiliency) ¬/
+HealthChecks ¬/
 Swagger ¬/
-CQRS
+CQRS ¬/
 Httpclient with polly ¬/
+
+TODOS:
+Controller return decorations for Swagger
+FluentValidation on api method body inputs
+Add more logging options (to elk for example)

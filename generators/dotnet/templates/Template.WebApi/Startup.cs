@@ -17,7 +17,12 @@ namespace <%= webApiName %>
     using HealthChecks.UI.Client;<% } %><% if(efCore) { %>
 	using System.Reflection;
 	using Microsoft.EntityFrameworkCore;
-	using <%= infrastructureName %>.EntityFramework;<% } %>
+	using <%= infrastructureName %>.EntityFramework;<% } %><% if(cqrs) { %>
+	using System;
+	using System.Linq;
+	using MediatR;
+	using <%= domainName %>.Extensions;
+	using <%= infrastructureName %>.Extensions;<% } %>
 	
 	public class Startup
 	{
@@ -51,9 +56,20 @@ namespace <%= webApiName %>
 				}));
 			<% } %><% if(healthchecks) { %>
 			// See https://github.com/Xabaril/AspNetCore.Diagnostics.HealthChecks
-            services.AddHealthChecks();
+            services.AddHealthChecks()<% if(efCore) { %><%= efCoreHealthString %><% } %>;
+			<% } %><% if(cqrs) { %>
+			services.RegisterDomainServices();
+			services.RegisterInfrastructureServices();
+
+			// See https://github.com/jbogard/MediatR
+			services.AddMediatR(AppDomain
+				.CurrentDomain
+				.GetAssemblies()
+				.First(assembly => assembly.GetName().Name == "<%= infrastructureName %>"));
 			<% } %>
-			services.AddControllers();<% if(swagger) { %>
+			services.AddControllers()<% if(cqrs) { %>.AddNewtonsoftJson(x => x
+					.SerializerSettings
+					.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore)<% } %>;<% if(swagger) { %>
 			
 			// See https://github.com/domaindrivendev/Swashbuckle.AspNetCore
 			services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" }));<% } %>

@@ -27,7 +27,7 @@ namespace <%= infrastructureName %>.EntityFramework
 				builder.Property(comment => comment.Id).IsRequired().Metadata.IsPrimaryKey();
 				builder.Property(comment => comment.Content).IsRequired();
 				builder.Property(comment => comment.Author).IsRequired();
-				builder.HasOne(comment => comment.Post).WithMany().HasForeignKey(comment => comment.PostId).IsRequired();
+				builder.HasOne(comment => comment.Post).WithMany(post => post.Comments).HasForeignKey(comment => comment.PostId).IsRequired();
 			});
 		}
 	}
