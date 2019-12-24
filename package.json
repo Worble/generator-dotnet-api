@@ -68,7 +68,7 @@
   "scripts": {
     "pretest": "eslint .",
     "test": "jest",
-    "build": "tsc ./generators/dotnet/index.ts -t es6 --moduleResolution Node"
+    "build": "tsc ./generators/dotnet/index.ts -t es6 --moduleResolution Node --module commonjs"
   },
   "license": "MIT"
 }

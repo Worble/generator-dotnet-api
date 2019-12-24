@@ -21,6 +21,16 @@ function getEfNugetPackageName(efCoreConnection) {
             return "Microsoft.EntityFrameworkCore.SQLite";
     }
 }
+function getEfHealthCheckNugetPackageName(efCoreConnection) {
+    switch (efCoreConnection) {
+        case EfCoreConnectionEnum.SqlServer:
+            return "AspNetCore.HealthChecks.SqlServer";
+        case EfCoreConnectionEnum.Postgres:
+            return "AspNetCore.HealthChecks.Npgsql";
+        case EfCoreConnectionEnum.Sqlite:
+            return "AspNetCore.HealthChecks.SqLite";
+    }
+}
 function getEfStartupUseString(efCoreConnection) {
     switch (efCoreConnection) {
         case EfCoreConnectionEnum.SqlServer:
@@ -29,6 +39,16 @@ function getEfStartupUseString(efCoreConnection) {
             return "options.UseNpgsql(";
         case EfCoreConnectionEnum.Sqlite:
             return "options.UseSqlite(";
+    }
+}
+function getEfHealthcheckString(efCoreConnection) {
+    switch (efCoreConnection) {
+        case EfCoreConnectionEnum.SqlServer:
+            return `.AddSqlServer(Configuration.GetConnectionString("PostContext"))`;
+        case EfCoreConnectionEnum.Postgres:
+            return `.AddNpgSql(Configuration.GetConnectionString("PostContext"))`;
+        case EfCoreConnectionEnum.Sqlite:
+            return `.AddSqlite(Configuration.GetConnectionString("PostContext"))`;
     }
 }
 module.exports = class extends Generator {
@@ -163,6 +183,7 @@ module.exports = class extends Generator {
         const efCoreConnection = props.efCoreConnection;
         const efCoreConnectionString = props.efCoreConnectionString;
         const efCoreOptionsUse = getEfStartupUseString(efCoreConnection);
+        const efCoreHealthString = getEfHealthcheckString(efCoreConnection);
         // CQRS constants
         const cqrs = props.cqrs;
         // // Setups
@@ -182,8 +203,11 @@ module.exports = class extends Generator {
         if (polly) {
             this._setupPolly(namingConstants);
         }
-        if (healthchecksUi) {
-            this._setupHealthchecksUi(namingConstants, serilog);
+        if (healthchecks) {
+            this._setupHealthChecks(namingConstants, efCore, efCoreConnection);
+            if (healthchecksUi) {
+                this._setupHealthchecksUi(namingConstants, serilog);
+            }
         }
         this._setupEntityFiles(namingConstants, efCore, cqrs);
         if (efCore) {
@@ -209,6 +233,7 @@ module.exports = class extends Generator {
             healthchecksUi,
             efCore,
             efCoreOptionsUse,
+            efCoreHealthString,
             cqrs
         });
         // - Program.cs
@@ -280,6 +305,13 @@ module.exports = class extends Generator {
         this._addNugetPackage(webApiName, pollyNugetPackage);
         this.fs.copyTpl(this.templatePath(templateDomainName, "Services", "IExampleHttpService.cs"), this.destinationPath(domainName, "Services", "IExampleHttpService.cs"), { domainName });
         this.fs.copyTpl(this.templatePath(templateInfrastructureName, "Services", "ExampleHttpService.cs"), this.destinationPath(infrastructureName, "Services", "ExampleHttpService.cs"), { infrastructureName, domainName });
+    }
+    _setupHealthChecks(namingConstants, efCore, efCoreConnection) {
+        const webApiName = namingConstants.project.webApiName;
+        if (efCore) {
+            const efCoreHealthCheckNugetPackage = getEfHealthCheckNugetPackageName(efCoreConnection);
+            this._addNugetPackage(webApiName, efCoreHealthCheckNugetPackage);
+        }
     }
     _setupHealthchecksUi(namingConstants, serilog) {
         const projectName = namingConstants.project.projectName;
