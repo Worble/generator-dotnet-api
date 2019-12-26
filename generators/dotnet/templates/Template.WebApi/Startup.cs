@@ -18,7 +18,6 @@ namespace <%= webApiName %>
 	using System.Reflection;
 	using Microsoft.EntityFrameworkCore;
 	using <%= infrastructureName %>.EntityFramework;<% } %><% if(cqrs) { %>
-	using System;
 	using System.Linq;
 	using MediatR;
 	using <%= domainName %>.Extensions;
@@ -65,7 +64,7 @@ namespace <%= webApiName %>
 			services.AddMediatR(AppDomain
 				.CurrentDomain
 				.GetAssemblies()
-				.First(assembly => assembly.GetName().Name == "<%= infrastructureName %>"));
+				.First(assembly => assembly.GetName().Name == "<%- infrastructureName %>"));
 			<% } %>
 			services.AddControllers()<% if(cqrs) { %>.AddNewtonsoftJson(x => x
 					.SerializerSettings
