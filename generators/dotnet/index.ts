@@ -694,6 +694,9 @@ module.exports = class extends Generator {
       "Microsoft.AspNetCore.Mvc.NewtonsoftJson";
     this._addNugetPackage(webApiName, webApiNewtonsoftNugetPackage);
 
+    const logginExtensionsNugetPackage = "Microsoft.Extensions.Logging";
+    this._addNugetPackage(infrastructureName, logginExtensionsNugetPackage);
+
     this._setupCqrsDomain(namingConstants);
     this._setupCqrsInfrastructure(namingConstants);
     this._setupCqrsWebApi(namingConstants);
