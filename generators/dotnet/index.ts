@@ -51,11 +51,11 @@ function getEfStartupUseString(efCoreConnection: EfCoreConnectionEnum) {
 function getEfHealthcheckString(efCoreConnection: EfCoreConnectionEnum) {
   switch (efCoreConnection) {
     case EfCoreConnectionEnum.SqlServer:
-      return `.AddSqlServer(Configuration.GetConnectionString("PostContext"))`;
+      return `.AddSqlServer(Configuration.GetConnectionString(\"PostContext\"))`;
     case EfCoreConnectionEnum.Postgres:
-      return `.AddNpgSql(Configuration.GetConnectionString("PostContext"))`;
+      return `.AddNpgSql(Configuration.GetConnectionString(\"PostContext\"))`;
     case EfCoreConnectionEnum.Sqlite:
-      return `.AddSqlite(Configuration.GetConnectionString("PostContext"))`;
+      return `.AddSqlite(Configuration.GetConnectionString(\"PostContext\"))`;
   }
 }
 

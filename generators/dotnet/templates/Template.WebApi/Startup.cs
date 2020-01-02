@@ -56,7 +56,7 @@ namespace <%= webApiName %>
 				}));
 			<% } %><% if(healthchecks) { %>
 			// See https://github.com/Xabaril/AspNetCore.Diagnostics.HealthChecks
-            services.AddHealthChecks()<% if(efCore) { %><%= efCoreHealthString %><% } %>;
+            services.AddHealthChecks()<% if(efCore) { %><%- efCoreHealthString %><% } %>;
 			<% } %><% if(cqrs) { %>
 			services.RegisterDomainServices();
 			services.RegisterInfrastructureServices();

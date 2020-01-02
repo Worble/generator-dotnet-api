@@ -8,6 +8,7 @@ CQRS ¬/
 Httpclient with polly ¬/
 
 TODOS:
+Add a default Test project
 Controller return decorations for Swagger
 FluentValidation on api method body inputs
 Add more logging options (to elk for example)
