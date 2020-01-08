@@ -84,6 +84,7 @@ interface IGeneratorPrompts {
   efCoreConnection: EfCoreConnectionEnum;
   efCoreConnectionString: string;
   cqrs: boolean;
+  docker: boolean;
 }
 
 module.exports = class extends Generator {
@@ -175,6 +176,12 @@ module.exports = class extends Generator {
         name: "cqrs",
         message: "Setup DDD and CQRS infrastructure with Mediatr?",
         default: false
+      },
+      {
+        type: "confirm",
+        name: "docker",
+        message: "Add Docker support?",
+        default: false
       }
     ];
 
@@ -244,6 +251,9 @@ module.exports = class extends Generator {
     // CQRS constants
     const cqrs: boolean = props.cqrs;
 
+    // docker constants
+    const docker: boolean = props.docker;
+
     // // Setups
 
     // Initial setup
@@ -283,6 +293,10 @@ module.exports = class extends Generator {
 
     if (cqrs) {
       this._setupCqrs(namingConstants);
+    }
+
+    if (docker) {
+      this._setupDocker(healthchecksUi);
     }
 
     // // Files
@@ -935,6 +949,22 @@ module.exports = class extends Generator {
     );
   }
 
+  _setupDocker(healthchecksui: boolean) {
+    this.fs.copy(
+      this.templatePath("Dockerfile"),
+      this.destinationPath("Dockerfile")
+    );
+    this.fs.copy(
+      this.templatePath(".dockerignore"),
+      this.destinationPath(".dockerignore")
+    );
+    if (healthchecksui) {
+      this.fs.copy(
+        this.templatePath("Dockerfile-HealthCheck"),
+        this.destinationPath("Dockerfile-HealthCheck")
+      );
+    }
+  }
   // Common
 
   _dotnetCreateNew(type: string, projectName?: string, framework?: string) {
