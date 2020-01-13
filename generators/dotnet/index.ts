@@ -954,19 +954,23 @@ module.exports = class extends Generator {
       this.templatePath("DockerfileDevelopment"),
       this.destinationPath("DockerfileDevelopment")
     );
+
     this.fs.copy(
       this.templatePath("DockerfileRelease"),
       this.destinationPath("DockerfileRelease")
     );
+
     this.fs.copy(
       this.templatePath(".dockerignore"),
       this.destinationPath(".dockerignore")
     );
+
     if (healthchecksui) {
       this.fs.copy(
         this.templatePath("Dockerfile-HealthCheckDevelopment"),
         this.destinationPath("Dockerfile-HealthCheckDevelopment")
       );
+
       this.fs.copy(
         this.templatePath("Dockerfile-HealthCheckRelease"),
         this.destinationPath("Dockerfile-HealthCheckRelease")

@@ -132,6 +132,12 @@ module.exports = class extends Generator {
                 name: "cqrs",
                 message: "Setup DDD and CQRS infrastructure with Mediatr?",
                 default: false
+            },
+            {
+                type: "confirm",
+                name: "docker",
+                message: "Add Docker support?",
+                default: false
             }
         ];
         return this.prompt(prompts).then((props) => {
@@ -186,6 +192,8 @@ module.exports = class extends Generator {
         const efCoreHealthString = getEfHealthcheckString(efCoreConnection);
         // CQRS constants
         const cqrs = props.cqrs;
+        // docker constants
+        const docker = props.docker;
         // // Setups
         // Initial setup
         this._setupProject(namingConstants);
@@ -215,6 +223,9 @@ module.exports = class extends Generator {
         }
         if (cqrs) {
             this._setupCqrs(namingConstants);
+        }
+        if (docker) {
+            this._setupDocker(healthchecksUi);
         }
         // // Files
         // - WeatherForecast.cs
@@ -437,6 +448,15 @@ module.exports = class extends Generator {
         const webApiName = namingConstants.project.webApiName;
         const domainName = namingConstants.project.domainName;
         this.fs.copyTpl(this.templatePath(templateWebApiName, "Controllers", "PostsController.cs"), this.destinationPath(webApiName, "Controllers", "PostsController.cs"), { webApiName, domainName });
+    }
+    _setupDocker(healthchecksui) {
+        this.fs.copy(this.templatePath("DockerfileDevelopment"), this.destinationPath("DockerfileDevelopment"));
+        this.fs.copy(this.templatePath("DockerfileRelease"), this.destinationPath("DockerfileRelease"));
+        this.fs.copy(this.templatePath(".dockerignore"), this.destinationPath(".dockerignore"));
+        if (healthchecksui) {
+            this.fs.copy(this.templatePath("Dockerfile-HealthCheckDevelopment"), this.destinationPath("Dockerfile-HealthCheckDevelopment"));
+            this.fs.copy(this.templatePath("Dockerfile-HealthCheckRelease"), this.destinationPath("Dockerfile-HealthCheckRelease"));
+        }
     }
     // Common
     _dotnetCreateNew(type, projectName, framework) {
