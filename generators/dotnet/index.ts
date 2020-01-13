@@ -951,8 +951,12 @@ module.exports = class extends Generator {
 
   _setupDocker(healthchecksui: boolean) {
     this.fs.copy(
-      this.templatePath("Dockerfile"),
-      this.destinationPath("Dockerfile")
+      this.templatePath("DockerfileDevelopment"),
+      this.destinationPath("DockerfileDevelopment")
+    );
+    this.fs.copy(
+      this.templatePath("DockerfileRelease"),
+      this.destinationPath("DockerfileRelease")
     );
     this.fs.copy(
       this.templatePath(".dockerignore"),
@@ -960,8 +964,12 @@ module.exports = class extends Generator {
     );
     if (healthchecksui) {
       this.fs.copy(
-        this.templatePath("Dockerfile-HealthCheck"),
-        this.destinationPath("Dockerfile-HealthCheck")
+        this.templatePath("Dockerfile-HealthCheckDevelopment"),
+        this.destinationPath("Dockerfile-HealthCheckDevelopment")
+      );
+      this.fs.copy(
+        this.templatePath("Dockerfile-HealthCheckRelease"),
+        this.destinationPath("Dockerfile-HealthCheckRelease")
       );
     }
   }
