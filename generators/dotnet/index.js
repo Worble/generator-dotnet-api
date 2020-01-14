@@ -335,7 +335,7 @@ module.exports = class extends Generator {
         const healthCheckUiNugetPackage = "AspNetCore.HealthChecks.UI";
         this._addNugetPackage(webApiName, healthCheckUiClientNugetPackage);
         this._dotnetCreateNew("sln", healthCheckSlnName);
-        this._dotnetCreateNew("web", healthCheckProjName, "netcoreapp3.0");
+        this._dotnetCreateNew("web", healthCheckProjName, "netcoreapp3.1");
         this._dotnetSlnReference(healthCheckProjName, healthCheckSlnFullName);
         this._addNugetPackage(healthCheckProjName, healthCheckUiNugetPackage);
         if (serilog) {

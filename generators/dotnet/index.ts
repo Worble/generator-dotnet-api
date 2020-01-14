@@ -522,7 +522,7 @@ module.exports = class extends Generator {
     this._addNugetPackage(webApiName, healthCheckUiClientNugetPackage);
 
     this._dotnetCreateNew("sln", healthCheckSlnName);
-    this._dotnetCreateNew("web", healthCheckProjName, "netcoreapp3.0");
+    this._dotnetCreateNew("web", healthCheckProjName, "netcoreapp3.1");
     this._dotnetSlnReference(healthCheckProjName, healthCheckSlnFullName);
     this._addNugetPackage(healthCheckProjName, healthCheckUiNugetPackage);
 
@@ -979,7 +979,11 @@ module.exports = class extends Generator {
   }
   // Common
 
-  _dotnetCreateNew(type: string, projectName?: string, framework?: string) {
+  _dotnetCreateNew(
+    type: "classlib" | "sln" | "web" | "webapi" | "tool-manifest",
+    projectName?: string,
+    framework?: "netstandard2.1" | "netcoreapp3.1"
+  ) {
     this.log(`Creating ${type} ${projectName ? projectName : ""}`);
 
     const projectNameCommand = projectName ? ` -n ${projectName}` : "";
