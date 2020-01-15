@@ -3,10 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "homepage": "",
-  "author": {
-    "name": "Worble",
-    "email": "rsc93@pm.me"
-  },
+  "author": "Worble <rsc93@protonmail.com>",
   "files": [
     "generators"
   ],
@@ -70,5 +67,12 @@
     "test": "jest",
     "build": "tsc ./generators/dotnet/index.ts -t es6 --moduleResolution Node --module commonjs"
   },
-  "license": "MIT"
+  "repository": {
+    "type": "git",
+	"url": "git+https://github.com/Worble/generator-dotnet-api.git"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Worble/generator-dotnet-api/issues"
+  }
 }

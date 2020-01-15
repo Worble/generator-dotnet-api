@@ -1,5 +1,6 @@
-# generator-dotnet-webapi [![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url] [![Dependency Status][daviddm-image]][daviddm-url]
-> 
+# I MADE THIS FOR PERSONAL USE ONLY
+
+If you for some reason decide to use this, be aware that the majority of operations performed are NOT in memfs, and it does write DIRECTLY to the directory you're in. This means if anything goes wrong, you WILL need to clean up that directory before trying again.
 
 ## Installation
 
