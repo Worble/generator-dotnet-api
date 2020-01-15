@@ -1,6 +1,6 @@
 {
   "name": "@worble/generator-dotnet-webapi",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "homepage": "",
   "author": "Worble <rsc93@protonmail.com>",
@@ -69,7 +69,7 @@
   },
   "repository": {
     "type": "git",
-	"url": "git+https://github.com/Worble/generator-dotnet-api.git"
+    "url": "git+https://github.com/Worble/generator-dotnet-api.git"
   },
   "license": "MIT",
   "bugs": {
