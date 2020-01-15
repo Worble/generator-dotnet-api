@@ -88,12 +88,6 @@ interface IGeneratorPrompts {
 }
 
 module.exports = class extends Generator {
-  initializing() {
-    if (this.options.path) {
-      this.destinationRoot(this.options.path);
-    }
-  }
-
   prompting() {
     // Have Yeoman greet the user.
     this.log(
@@ -200,6 +194,10 @@ module.exports = class extends Generator {
   _props: IGeneratorPrompts;
 
   writing() {
+    if (this.options.path) {
+      this.destinationRoot(this.options.path);
+    }
+
     // // Constants
     const props: IGeneratorPrompts = this._props;
 

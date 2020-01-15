@@ -52,11 +52,6 @@ function getEfHealthcheckString(efCoreConnection) {
     }
 }
 module.exports = class extends Generator {
-    initializing() {
-        if (this.options.path) {
-            this.destinationRoot(this.options.path);
-        }
-    }
     prompting() {
         // Have Yeoman greet the user.
         this.log(yosay(`Welcome to the lovely ${chalk.red("generator-dotnet-webapi")} generator!`));
@@ -151,6 +146,9 @@ module.exports = class extends Generator {
         });
     }
     writing() {
+        if (this.options.path) {
+            this.destinationRoot(this.options.path);
+        }
         // // Constants
         const props = this._props;
         // Template name constants
