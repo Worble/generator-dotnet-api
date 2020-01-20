@@ -2,19 +2,19 @@ FROM mcr.microsoft.com/dotnet/core/sdk:3.1-alpine AS restore
 WORKDIR /app
 
 # copy csproj and restore as distinct layers
-COPY MyProjectHealthCheckUI.sln .
-COPY MyProject.HealthCheckUI/*.csproj ./MyProject.HealthCheckUI/
+COPY <%= projectName %>HealthCheckUI.sln .
+COPY <%= projectName %>.HealthCheckUI/*.csproj ./<%= projectName %>.HealthCheckUI/
 RUN dotnet restore
 
 
 FROM restore as build
 # copy everything else and build app
-COPY MyProject.HealthCheckUI/ ./MyProject.HealthCheckUI
-WORKDIR /app/MyProject.HealthCheckUI
+COPY <%= projectName %>.HealthCheckUI/ ./<%= projectName %>.HealthCheckUI
+WORKDIR /app/<%= projectName %>.HealthCheckUI
 RUN dotnet publish -c Release -o /app/publish
 
 
 FROM mcr.microsoft.com/dotnet/core/aspnet:3.1-alpine AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
-ENTRYPOINT ["dotnet", "MyProject.HealthCheckUI.dll"]
+ENTRYPOINT ["dotnet", "<%= projectName %>.HealthCheckUI.dll"]

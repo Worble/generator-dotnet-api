@@ -300,7 +300,7 @@ module.exports = class extends Generator {
     }
 
     if (docker) {
-      this._setupDocker(healthchecksUi);
+      this._setupDocker(namingConstants, healthchecksUi);
     }
 
     // // Files
@@ -953,15 +953,27 @@ module.exports = class extends Generator {
     );
   }
 
-  _setupDocker(healthchecksui: boolean) {
-    this.fs.copy(
+  _setupDocker(namingConstants: INamingConstants, healthchecksui: boolean) {
+    this.fs.copyTpl(
       this.templatePath("DockerfileDevelopment"),
-      this.destinationPath("DockerfileDevelopment")
+      this.destinationPath("DockerfileDevelopment"),
+      {
+        projectName: namingConstants.project.projectName,
+        webApiName: namingConstants.project.webApiName,
+        infrastructureName: namingConstants.project.infrastructureName,
+        domainName: namingConstants.project.domainName
+      }
     );
 
-    this.fs.copy(
+    this.fs.copyTpl(
       this.templatePath("DockerfileRelease"),
-      this.destinationPath("DockerfileRelease")
+      this.destinationPath("DockerfileRelease"),
+      {
+        projectName: namingConstants.project.projectName,
+        webApiName: namingConstants.project.webApiName,
+        infrastructureName: namingConstants.project.infrastructureName,
+        domainName: namingConstants.project.domainName
+      }
     );
 
     this.fs.copy(
@@ -970,14 +982,20 @@ module.exports = class extends Generator {
     );
 
     if (healthchecksui) {
-      this.fs.copy(
+      this.fs.copyTpl(
         this.templatePath("Dockerfile-HealthCheckDevelopment"),
-        this.destinationPath("Dockerfile-HealthCheckDevelopment")
+        this.destinationPath("Dockerfile-HealthCheckDevelopment"),
+        {
+          projectName: namingConstants.project.projectName
+        }
       );
 
-      this.fs.copy(
+      this.fs.copyTpl(
         this.templatePath("Dockerfile-HealthCheckRelease"),
-        this.destinationPath("Dockerfile-HealthCheckRelease")
+        this.destinationPath("Dockerfile-HealthCheckRelease"),
+        {
+          projectName: namingConstants.project.projectName
+        }
       );
     }
   }
